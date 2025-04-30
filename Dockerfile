@@ -1,15 +1,23 @@
 FROM php:8.1-apache
 
-RUN docker-php-ext-install pdo pdo_mysql
+# تثبيت Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# نسخ ملفات المشروع
 COPY . /var/www/html/
 
+# تشغيل composer install داخل الحاوية
+WORKDIR /var/www/html/
+RUN composer install
+
+# صلاحيات مجلد writable
 RUN chown -R www-data:www-data /var/www/html/writable \
     && chmod -R 0777 /var/www/html/writable
 
+# تفعيل mod_rewrite
 RUN a2enmod rewrite
 
-# تعديل إعدادات apache لقراءة public كمجلد رئيسي
+# إعداد apache ليخدم من public
 RUN echo "DocumentRoot /var/www/html/public" > /etc/apache2/sites-available/000-default.conf \
  && echo "<Directory /var/www/html/public>\n\
     Options Indexes FollowSymLinks\n\
