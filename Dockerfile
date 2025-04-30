@@ -29,12 +29,9 @@ RUN sed -ri \
       -e 's!<Directory /var/www/html>!<Directory /var/www/html/public>!g' \
       /etc/apache2/apache2.conf
 
-# 2.2. Fix permissions on ALL writable subfolders & enable rewrite
+# 2.2. Fix permissions on writable/ recursively & enable rewrite
 RUN chown -R www-data:www-data /var/www/html/writable \
-  && chmod -R 0777 /var/www/html/writable/cache \
-  && chmod -R 0777 /var/www/html/writable/logs \
-  && chmod -R 0777 /var/www/html/writable/session \
-  && chmod -R 0777 /var/www/html/writable/uploads \
+  && chmod -R 0777 /var/www/html/writable \
   && a2enmod rewrite
 
 # 3. Install Composer binary
