@@ -3,6 +3,13 @@ FROM php:8.1-apache
 # تثبيت Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# تثبيت امتدادات PHP المطلوبة
+RUN apt-get update && apt-get install -y \
+    libicu-dev \
+    zip \
+    unzip \
+    && docker-php-ext-install intl
+
 # نسخ ملفات المشروع
 COPY . /var/www/html/
 
