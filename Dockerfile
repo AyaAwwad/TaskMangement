@@ -1,44 +1,28 @@
 FROM php:8.1-apache
 
-# 1. Install required packages and build tools for extensions
-RUN apt-get update && apt-get install -y \
-    unzip \
-    git \
-    zip \
-    libzip-dev \
-    libonig-dev \
-    libicu-dev \
-    g++ \
-    make \
-    autoconf \
-    pkg-config \
-  && docker-php-ext-configure intl \
-  && docker-php-ext-install intl pdo_mysql zip \
-  && docker-php-source delete
+# تثبيت الامتدادات اللازمة لـ CodeIgniter
+RUN docker-php-ext-install pdo pdo_mysql
 
-# 2. Copy application code
+# نسخ الملفات داخل الحاوية
 COPY . /var/www/html/
-WORKDIR /var/www/html/
 
-# 2.1. Configure Apache to use public/ as DocumentRoot
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-RUN sed -ri \
-      -e 's!DocumentRoot /var/www/html!DocumentRoot /var/www/html/public!g' \
-      /etc/apache2/sites-available/000-default.conf \
-  && sed -ri \
-      -e 's!<Directory /var/www/html>!<Directory /var/www/html/public>!g' \
-      /etc/apache2/apache2.conf
-
-# 2.2. Fix permissions on writable/ recursively & enable rewrite
+# إعداد صلاحيات مجلد writable
 RUN chown -R www-data:www-data /var/www/html/writable \
-  && chmod -R 0777 /var/www/html/writable \
-  && a2enmod rewrite
+    && chmod -R 0777 /var/www/html/writable
 
-# 3. Install Composer binary
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# تفعيل mod_rewrite لـ CodeIgniter
+RUN a2enmod rewrite
 
-# 4. Install PHP dependencies (excluding dev for faster build)
-RUN composer install --no-dev --optimize-autoloader
+# إعداد Apache لاستقبال الطلبات
+RUN echo '<Directory /var/www/html/public>\n\
+    Options Indexes FollowSymLinks\n\
+    AllowOverride All\n\
+    Require all granted\n\
+</Directory>' >> /etc/apache2/apache2.conf
 
-# 5. Expose port 80
+# تحديد مجلد التشغيل
+WORKDIR /var/www/html/public
+
 EXPOSE 80
+
+CMD ["apache2-foreground"]

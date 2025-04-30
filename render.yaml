@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: codeigniter-api
+    env: docker
+    plan: free
+    branch: main
+    dockerfilePath: ./Dockerfile
+    buildCommand: ""
+    startCommand: ""
+    envVars:
+      - key: API_KEY
+        value: 123456
