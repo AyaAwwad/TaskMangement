@@ -16,11 +16,11 @@ RUN apt-get update && apt-get install -y \
   && docker-php-ext-install intl pdo_mysql zip \
   && docker-php-source delete
 
-# 2. Copy application code and configure Apache
+# 2. Copy application code
 COPY . /var/www/html/
 WORKDIR /var/www/html/
 
-# 2.1. Use public/ as DocumentRoot
+# 2.1. Configure Apache to use public/ as DocumentRoot
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri \
       -e 's!DocumentRoot /var/www/html!DocumentRoot /var/www/html/public!g' \
@@ -29,9 +29,12 @@ RUN sed -ri \
       -e 's!<Directory /var/www/html>!<Directory /var/www/html/public>!g' \
       /etc/apache2/apache2.conf
 
-# 2.2. Fix permissions for writable folder and enable rewrite
+# 2.2. Fix permissions on ALL writable subfolders & enable rewrite
 RUN chown -R www-data:www-data /var/www/html/writable \
-  && chmod -R 0777 /var/www/html/writable \
+  && chmod -R 0777 /var/www/html/writable/cache \
+  && chmod -R 0777 /var/www/html/writable/logs \
+  && chmod -R 0777 /var/www/html/writable/session \
+  && chmod -R 0777 /var/www/html/writable/uploads \
   && a2enmod rewrite
 
 # 3. Install Composer binary
