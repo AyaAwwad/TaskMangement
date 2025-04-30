@@ -1,39 +1,36 @@
+# استخدام صورة PHP مع Apache
 FROM php:8.1-apache
 
-# تثبيت Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
-# تثبيت امتدادات PHP المطلوبة
+# تثبيت الامتدادات المطلوبة
 RUN apt-get update && apt-get install -y \
     libicu-dev \
     zip \
     unzip \
     && docker-php-ext-install intl
 
-# نسخ ملفات المشروع
-COPY . /var/www/html/
+# تثبيت Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# تشغيل composer install داخل الحاوية
-WORKDIR /var/www/html/
-RUN composer install
+# تعيين مجلد العمل داخل الحاوية
+WORKDIR /var/www/html
 
-# صلاحيات مجلد writable
-RUN chown -R www-data:www-data /var/www/html/writable \
-    && chmod -R 0777 /var/www/html/writable
+# نسخ ملفات المشروع إلى الحاوية
+COPY . .
 
-# تفعيل mod_rewrite
+# تثبيت الاعتماديات (composer install)
+RUN composer install --no-dev --optimize-autoloader
+
+# إعداد صلاحيات مجلد writable
+RUN chown -R www-data:www-data /var/www/html/writable
+
+# تغيير DocumentRoot إلى مجلد public
+RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
+
+# تفعيل mod_rewrite في Apache (مطلوب لـ CodeIgniter)
 RUN a2enmod rewrite
 
-# إعداد apache ليخدم من public
-RUN echo "DocumentRoot /var/www/html/public" > /etc/apache2/sites-available/000-default.conf \
- && echo "<Directory /var/www/html/public>\n\
-    Options Indexes FollowSymLinks\n\
-    AllowOverride All\n\
-    Require all granted\n\
-</Directory>" >> /etc/apache2/apache2.conf
+# تعيين صلاحيات نهائية
+RUN chmod -R 755 /var/www/html
 
-WORKDIR /var/www/html/public
-
+# المنفذ الذي سيتم الاستماع عليه (Render تستخدمه تلقائيًا)
 EXPOSE 80
-
-CMD ["apache2-foreground"]
