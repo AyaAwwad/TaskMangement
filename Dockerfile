@@ -1,44 +1,37 @@
-# استخدم صورة PHP مع Apache
 FROM php:8.1-apache
 
-# تثبيت الامتدادات المطلوبة
+# تثبيت الإضافات المطلوبة
 RUN apt-get update && apt-get install -y \
-    libicu-dev \
-    zip \
-    unzip \
-    git \
-    && docker-php-ext-install intl pdo pdo_mysql
-
-# نسخ ملفات المشروع إلى داخل الحاوية
-COPY . /var/www/html/
-
-# تحديد مجلد العمل
-WORKDIR /var/www/html/
+    libicu-dev zip unzip git libzip-dev \
+    && docker-php-ext-install intl zip \
+    && a2enmod rewrite
 
 # تثبيت Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# تثبيت الاعتمادات (vendor)
-RUN composer install --no-interaction --no-dev --prefer-dist
+# إعداد مجلد التطبيق
+WORKDIR /var/www/html/
+COPY . .
 
-# إعداد صلاحيات مجلد writable و logs
+# تثبيت الحزم
+RUN composer install
+
+# إعداد صلاحيات مجلد writable
 RUN chown -R www-data:www-data /var/www/html/writable \
     && chmod -R 775 /var/www/html/writable
 
-# تفعيل إعادة كتابة العناوين
-RUN a2enmod rewrite
-
-# تغيير DocumentRoot ليكون مجلد public
+# تعديل DocumentRoot لـ public
 RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|' /etc/apache2/sites-available/000-default.conf
 
-# نسخ ملف .htaccess إلى مجلد public إن لم يكن موجودًا
+# نسخ .htaccess
 COPY public/.htaccess /var/www/html/public/.htaccess
 
-# سكريبت لتعديل الصلاحيات وقت التشغيل
+# إعداد سكربت التشغيل
 RUN echo '#!/bin/bash\n\
 chown -R www-data:www-data /var/www/html/writable\n\
 chmod -R 775 /var/www/html/writable\n\
+ls -ld /var/www/html/writable/cache\n\
 exec apache2-foreground' > /start.sh && chmod +x /start.sh
 
-# الأمر الرئيسي عند تشغيل الحاوية
+# نقطة التشغيل
 CMD ["/start.sh"]
