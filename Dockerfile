@@ -32,5 +32,5 @@ chown -R www-data:www-data /var/www/html/writable\n\
 chmod -R 775 /var/www/html/writable\n\
 ls -ld /var/www/html/writable/cache\n\
 exec apache2-foreground' > /start.sh && chmod +x /start.sh
-
+###################################
 CMD ["/start.sh"]
