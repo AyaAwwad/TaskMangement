@@ -26,11 +26,16 @@ RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|' /et
 # نسخ .htaccess
 COPY public/.htaccess /var/www/html/public/.htaccess
 
-# إعداد سكربت التشغيل
+
+
+RUN mkdir -p /var/www/html/writable/cache
+
+# سكربت التشغيل
 RUN echo '#!/bin/bash\n\
 chown -R www-data:www-data /var/www/html/writable\n\
 chmod -R 775 /var/www/html/writable\n\
 ls -ld /var/www/html/writable/cache\n\
 exec apache2-foreground' > /start.sh && chmod +x /start.sh
-###################################222222228888888888888
+
+# نقطة التشغيل
 CMD ["/start.sh"]
